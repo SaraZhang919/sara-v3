@@ -1,84 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Sara V3 — Search Intent & Page Type Analyzer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sara V3 — Search Intent & Page Type Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<style>
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: #faf7f2;
-  padding: 40px;
-}
-.card {
-  max-width: 640px;
-  margin: auto;
-  background: #fff;
-  padding: 32px;
-  border-radius: 12px;
-}
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  margin-top: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-button {
-  margin-top: 20px;
-  padding: 14px;
-  width: 100%;
-  background: #c4622d;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.msg {
-  margin-top: 16px;
-  font-size: 14px;
-}
-</style>
+    :root {
+      --cream: #faf7f2;
+      --warm-white: #ffffff;
+      --ink: #1a1510;
+      --ink-light: #4a4035;
+      --ink-muted: #8a7f72;
+      --accent: #c4622d;
+      --accent-light: #f5ece4;
+      --accent-hover: #a8502a;
+      --border: #e8e0d4;
+      --shadow: 0 2px 16px rgba(26,21,16,0.08);
+      --radius: 12px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ===== Password Gate ===== */
+    #authGate {
+      position: fixed;
+      inset: 0;
+      background: #faf7f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .gate-card {
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    .gate-card input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .gate-card button {
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .gate-error {
+      color: #dc2626;
+      font-size: 13px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    /* ===== 原有样式（保持不变） ===== */
+    header {
+      background: var(--warm-white);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 24px 40px;
+      text-align: center;
+    }
+
+    main { max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    .card {
+      background: var(--warm-white);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 40px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 14px;
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+    }
+
+    .msg { margin-top: 16px; }
+  </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h2>Sara V3</h2>
-
-  <!-- 🔐 Access Key -->
-  <input 
-    type="password" 
-    id="authInput" 
-    placeholder="Enter Access Key (required)" 
-  />
-
-  <!-- Email -->
-  <input 
-    type="email" 
-    id="emailInput" 
-    placeholder="you@company.com" 
-  />
-
-  <!-- URLs -->
-  <textarea 
-    id="urlBatch" 
-    placeholder="Paste competitor URLs (one per line)"
-  ></textarea>
-
-  <button onclick="handleSubmit()">Analyse My Competitors</button>
-
-  <div class="msg" id="msg"></div>
+<!-- ✅ Password Gate -->
+<div id="authGate">
+  <div class="gate-card">
+    <h2>Enter Access Key</h2>
+    <input type="password" id="gateInput" placeholder="Access Key" />
+    <button onclick="unlockPage()">Enter</button>
+    <div id="gateError" class="gate-error">Invalid key</div>
+  </div>
 </div>
+
+<header>
+  <h1>Sara V3</h1>
+</header>
+
+<main>
+  <div class="card">
+    <input type="email" id="emailInput" placeholder="you@company.com" />
+    <textarea id="urlBatch" placeholder="Paste URLs"></textarea>
+    <button onclick="handleSubmit()">Analyse</button>
+    <div id="msg" class="msg"></div>
+  </div>
+</main>
 
 <script>
 const WEBHOOK = 'https://tizianazhang.app.n8n.cloud/webhook/sara_v3';
 
-// n8n header 名称
-const AUTH_HEADER_NAME = 'Sara';
+// 🔐 密码
+const CORRECT_KEY = 'vnz-internal-xK7mQ2';
+
+// 🔐 解锁逻辑
+function unlockPage() {
+  const val = document.getElementById('gateInput').value.trim();
+
+  if (val === CORRECT_KEY) {
+    document.getElementById('authGate').style.display = 'none';
+    localStorage.setItem('sara_auth', '1');
+  } else {
+    document.getElementById('gateError').style.display = 'block';
+  }
+}
+
+// 自动登录
+window.addEventListener('load', () => {
+  if (localStorage.getItem('sara_auth') === '1') {
+    document.getElementById('authGate').style.display = 'none';
+  }
+});
+
+// 回车支持
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') unlockPage();
+});
 
 function parseUrls(text) {
   return [...new Set(
@@ -91,31 +179,22 @@ function parseUrls(text) {
 function showMsg(text, isError = false) {
   const el = document.getElementById('msg');
   el.innerText = text;
-  el.style.color = isError ? '#dc2626' : '#16a34a';
+  el.style.color = isError ? 'red' : 'green';
 }
 
 async function handleSubmit() {
   showMsg('');
 
-  const authValue = document.getElementById('authInput').value.trim();
   const email = document.getElementById('emailInput').value.trim();
-  const urls = parseUrls(document.getElementById('urlBatch').value).slice(0, 12);
+  const urls = parseUrls(document.getElementById('urlBatch').value);
 
-  // 🔐 校验 Access Key
-  if (!authValue) {
-    showMsg('Please enter your Access Key.', true);
+  if (!email) {
+    showMsg('Please enter email', true);
     return;
   }
 
-  // Email 校验
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showMsg('Please enter a valid email.', true);
-    return;
-  }
-
-  // URL 校验
-  if (urls.length === 0) {
-    showMsg('Please input at least one valid URL (https://...)', true);
+  if (!urls.length) {
+    showMsg('Please input URLs', true);
     return;
   }
 
@@ -124,9 +203,7 @@ async function handleSubmit() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-
-        // ✅ 用户输入的 auth
-        [AUTH_HEADER_NAME]: authValue
+        'Sara': CORRECT_KEY // 👉 继续使用你的 auth
       },
       body: JSON.stringify({
         email,
@@ -134,17 +211,9 @@ async function handleSubmit() {
       })
     });
 
-    const text = await res.text();
-    console.log('DEBUG:', res.status, text);
+    if (!res.ok) throw new Error('Server error');
 
-    if (!res.ok) {
-      if (res.status === 403) {
-        throw new Error('Invalid Access Key.');
-      }
-      throw new Error(text || 'Server error');
-    }
-
-    showMsg('✅ Submitted! Please check your email.');
+    showMsg('✅ Submitted!');
 
   } catch (err) {
     showMsg('❌ ' + err.message, true);
